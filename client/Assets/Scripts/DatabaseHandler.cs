@@ -6,171 +6,187 @@ using Models;
 using System.Linq;
 using System;
 
-public class DatabaseHandler : MonoBehaviour 
+public class DatabaseHandler : MonoBehaviour
 {
-	public static DatabaseHandler Instance;
+    public static DatabaseHandler Instance;
 
-	private string token = "";
+    private string token = "";
 
-	private void Start()
-	{
-		token = PlayerPrefs.GetString ("token", "");
+    private void Start()
+    {
+        token = PlayerPrefs.GetString("token", "");
 
-		if (token == "") {
-			MenuController.Instance.ChangePage (0);
-		} else 
-		{
-			MenuController.Instance.ChangePage (1);
-		}
-	}
+        if (token == "")
+        {
+            MenuController.Instance.ChangePage(0);
+        }
+        else
+        {
+            MenuController.Instance.ChangePage(1);
+        }
+    }
 
-	private void Awake()
-	{
-		if (Instance == null) {
-			Instance = this;
-		}
-	}
+    private void Awake()
+    {
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+    }
 
-	public void SetToken(string token)
-	{
-		PlayerPrefs.SetString ("token", token);
-		this.token = token;
-	}
+    public void SetToken(string token)
+    {
+        PlayerPrefs.SetString("token", token);
+        this.token = token;
+    }
 
-	public void Login(string username,string password)
-	{
-		RequestHelper request = new RequestHelper{
-			Uri = "http://localhost:3000/auth/login",
-			Body = new User
-			{
-				username =	username,
-				password = password
-			}
-		};
+    public void Login(string username, string password)
+    {
+        RequestHelper request = new RequestHelper
+        {
+            Uri = "http://localhost:3000/auth/login",
+            Body = new User
+            {
+                username = username,
+                password = password
+            }
+        };
 
-		RestClient.Post<Response>(request).Then ((res) => {
-			PlayerPrefs.SetString("token",res.message);
-			Debug.Log(res.message);
-			MenuController.Instance.ChangePage(1);
-			MenuController.Instance.SetAuthErrorMessage(res.message);
-			token = res.message;
-		}).Catch ((err)=>
-			{
-				MenuController.Instance.SetAuthErrorMessage(err.Message);
-				Debug.Log(err.Message);
-			});
-	}
+        RestClient.Post<Response>(request).Then((res) =>
+        {
+            PlayerPrefs.SetString("token", res.message);
+            Debug.Log(res.message);
+            MenuController.Instance.SetAuthErrorMessage(res.message);
 
-	public void Register(string username,string password)
-	{
-		RequestHelper request = new RequestHelper{
-			Uri = "http://localhost:3000/auth/register",
-			Body = new User
-			{
-				username =	username,
-				password = password
-			}
-		};
+            if (res.code == "1")
+            {
+                MenuController.Instance.ChangePage(1);
+            }
+            token = res.message;
+        }).Catch((err) =>
+           {
+               MenuController.Instance.SetAuthErrorMessage(err.Message);
+               Debug.Log(err.Message);
+           });
+    }
 
-		RestClient.Post<Response>(request).Then ((res) => {
-			MenuController.Instance.SetAuthErrorMessage(res.message);
+    public void Register(string username, string password)
+    {
+        RequestHelper request = new RequestHelper
+        {
+            Uri = "http://localhost:3000/auth/register",
+            Body = new User
+            {
+                username = username,
+                password = password
+            }
+        };
 
-			Debug.Log (res.message);
-		}).Catch ((err)=>
-			{
-				MenuController.Instance.SetAuthErrorMessage(err.Message);
+        RestClient.Post<Response>(request).Then((res) =>
+        {
+            MenuController.Instance.SetAuthErrorMessage(res.message);
 
-				Debug.Log(err.Message);
-			});
-	}
+            Debug.Log(res.message);
+        }).Catch((err) =>
+           {
+               MenuController.Instance.SetAuthErrorMessage(err.Message);
 
-	public void GetLeaderboard(Action<List<ScoreData>> onSucces)
-	{
-		RequestHelper request = new RequestHelper{
-			Uri = "http://localhost:3000/leaderboard/list",
-			Body = new Token
-			{
-				token =	token,
-			}
-		};
+               Debug.Log(err.Message);
+           });
+    }
 
-		request.Headers.Add ("x-access-token", token);
+    public void GetLeaderboard(Action<List<ScoreData>> onSucces)
+    {
+        RequestHelper request = new RequestHelper
+        {
+            Uri = "http://localhost:3000/leaderboard/list",
+            Body = new Token
+            {
+                token = token,
+            }
+        };
 
-		RestClient.Get<Response>(request).Then ((res) => {
+        request.Headers.Add("x-access-token", token);
 
-			if (res.code == "1") {
+        RestClient.Get<Response>(request).Then((res) =>
+        {
 
-				List<ScoreData> scores = JsonHelper.ArrayFromJson<ScoreData>(res.message).ToList();
+            if (res.code == "1")
+            {
 
-				onSucces(scores);
-			}
+                List<ScoreData> scores = JsonHelper.ArrayFromJson<ScoreData>(res.message).ToList();
 
-			MenuController.Instance.SetLeaderboardErrorMessage(res.message);
+                onSucces(scores);
+            }
+
+            MenuController.Instance.SetLeaderboardErrorMessage(res.message);
 
 
-			RestClient.CleanDefaultHeaders();
-		}).Catch ((err)=>
-			{
-				RestClient.CleanDefaultHeaders();
-				MenuController.Instance.SetLeaderboardErrorMessage(err.Message);
+            RestClient.CleanDefaultHeaders();
+        }).Catch((err) =>
+           {
+               RestClient.CleanDefaultHeaders();
+               MenuController.Instance.SetLeaderboardErrorMessage(err.Message);
 
-				Debug.Log(err.Message);
-			});
-	}
+               Debug.Log(err.Message);
+           });
+    }
 
-	public void UpdateScore(int score)
-	{
-		RequestHelper request = new RequestHelper{
-			Uri = "http://localhost:3000/leaderboard/update",
-			Body = new ScoreData
-			{
-				token =	token,
-				score = score
-			}
-		};
+    public void UpdateScore(int score)
+    {
+        RequestHelper request = new RequestHelper
+        {
+            Uri = "http://localhost:3000/leaderboard/update",
+            Body = new ScoreData
+            {
+                token = token,
+                score = score
+            }
+        };
 
-		request.Headers.Add ("x-access-token", token);
+        request.Headers.Add("x-access-token", token);
 
-		RestClient.Put<Response>(request).Then ((res) => {
-			RestClient.CleanDefaultHeaders();
+        RestClient.Put<Response>(request).Then((res) =>
+        {
+            RestClient.CleanDefaultHeaders();
 
-			MenuController.Instance.SetLeaderboardErrorMessage(res.message);
+            MenuController.Instance.SetLeaderboardErrorMessage(res.message);
 
-			Debug.Log (res.message);
-		}).Catch ((err)=>
-			{
-				RestClient.CleanDefaultHeaders();
-				MenuController.Instance.SetLeaderboardErrorMessage(err.Message);
+            Debug.Log(res.message);
+        }).Catch((err) =>
+           {
+               RestClient.CleanDefaultHeaders();
+               MenuController.Instance.SetLeaderboardErrorMessage(err.Message);
 
-				Debug.Log(err.Message);
-			});
-	}
+               Debug.Log(err.Message);
+           });
+    }
 }
 
 [System.Serializable]
-public class User 
+public class User
 {
-	public string username;
-	public string password;
+    public string username;
+    public string password;
 }
 
 [System.Serializable]
 public class Response
 {
-	public string message;
-	public string code;
+    public string message;
+    public string code;
 }
 
 [System.Serializable]
-public class Token 
+public class Token
 {
-	public string token;
+    public string token;
 }
 
 [System.Serializable]
 public class ScoreData
 {
-	public string token;
-	public int score;
-	public string username;
+    public string token;
+    public int score;
+    public string username;
 }
