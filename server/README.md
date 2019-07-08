@@ -1,6 +1,6 @@
 To start server
 
 ```javascript
-npm install<br/>
+npm install
 nodemon server.js
 ```
